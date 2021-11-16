@@ -54,6 +54,8 @@ const multerMw = multer({
         // },
     }),
     fileFilter: (req, file, cb) => {
+
+        const maxFileSize = 1024 * 1024 * 1024;
         console.log('filter------------------------');
         
         console.log(req.locals.user);
@@ -65,6 +67,10 @@ const multerMw = multer({
         let apiName = req.body.apiName;
         let evidenceType = req.body.evidenceType;
         if(apiName !== 'postEvidence' || evidenceType !== 'file') {
+            cb(null, false);
+        }
+        else if(file.size > maxFileSize)
+        {
             cb(null, false);
         }
         else {
