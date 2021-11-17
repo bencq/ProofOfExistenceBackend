@@ -171,6 +171,7 @@ var v1ApiName2func = {
                 status: -1,
                 message: "params not complete"
             }
+            resp.status(400);
         }
         else {
             params_cmd.forEach((value, index, array) => { array[index] = '\'' + value + '\'' });
@@ -221,6 +222,7 @@ var v1ApiName2func = {
                 status: -1,
                 message: "params not complete"
             }
+            resp.status(400);
         }
         else {
             params_cmd.forEach((value, index, array) => { array[index] = '\'' + value + '\'' });
@@ -248,6 +250,7 @@ var v1ApiName2func = {
                 status: -1,
                 message: "params not complete"
             }
+            resp.status(400);
         }
         else {
             if(contentType === "evidenceAddress")
@@ -336,7 +339,7 @@ var v1ApiName2func = {
                         status: -1,
                         message: "\"" + contentData + "\" is not a valid evidenceID"
                     }
-                    
+                    resp.status(400);
                 }
             }
             else if(contentType === "evidenceName")
@@ -388,7 +391,7 @@ var v1ApiName2func = {
                         status: -1,
                         message: "\"" + contentData + "\" is not a valid evidenceID"
                     }
-                    
+                    resp.status(400);
                 }
             }
             else
@@ -397,6 +400,7 @@ var v1ApiName2func = {
                     status: -1,
                     message: "unknown contentType: " + contentType + "!"
                 }
+                resp.status(400);
             }
         }
         resp.send(object_output);
@@ -469,6 +473,7 @@ var v1ApiName2func = {
                 status: -1,
                 message: "params not complete"
             }
+            resp.status(400);
         } else {
 
             params_cmd.forEach((value, index, array) => { array[index] = '\'' + value + '\'' });
@@ -509,9 +514,61 @@ var v1ApiName2func = {
                 });
             }
         }
-
         resp.send(object_output);
     },
+    "downloadEvidenceFile": async (req, resp, next) => {
+        let { username } = req.locals.user;
+        let { keyStorePassword, keyPassword, info } = req.locals;
+        let { apiName, evidenceAddress} = req.body;
+
+        let params_cmd = [];
+        let params_local = [evidenceAddress];
+        let paramsComplete = params_cmd.concat(params_local).every((value, index, array) => { return value !== undefined });
+        
+
+        if (!paramsComplete) {
+            let object_output = {
+                status: -1,
+                message: "params not complete"
+            }
+
+            resp.status(400).send(object_output);
+            
+        }
+        else {
+
+            let file = null;
+            let queryObject = {
+                evidenceAddress: {$regex: "^(0x)?" + evidenceAddress + "$"},
+                username: username
+            };
+            await Evidence.findOne(queryObject).then((evidence) => {
+                if (!evidence) {
+                    console.log(evidence);
+                } else {
+                    console.log(evidence);
+
+                    file = evidence.file;
+                    
+                }
+            });
+
+            if(file)
+            {
+                let evidenceFilePath = path.resolve(file.destination, file.filename);
+                resp.download(evidenceFilePath, file.originalname);
+            }
+            else
+            {
+                let object_output = {
+                    status: -1,
+                    message: "file not found!"
+                }
+                resp.status(404).send(object_output);
+            }
+        }
+        
+    }
 };
 
 
@@ -525,7 +582,7 @@ app.post("/exportedAPI/v:apiVersion",
                     status: -1,
                     message: "Unauthorized!",
                 }
-                resp.send(object_output);
+                resp.status(401).send(object_output);
             } else {
                 
                 //self determined params
@@ -577,6 +634,7 @@ app.post("/exportedAPI/v:apiVersion",
                     status: -1,
                     message: "params not complete"
                 }
+                resp.status(400);
             }
             else {
                 let fileData = fs.readFileSync(req.file.path);
@@ -640,157 +698,12 @@ app.post("/exportedAPI/v:apiVersion",
                 status: -1,
                 "mesaage": "apiName: \"" + apiName + "\" not found"
             };
+            resp.status(400);
         }
         resp.send(object_output);
     }
 );
 
-
-//evidence api
-var rpcApiName2func = {
-    "getTotalTransactionCount": async (req, resp, next) => {
-        let apiName = req.body.apiName;
-        let { keyStorePassword, keyPassword, info } = req.locals;
-        let { username, evidenceID, evidenceData } = req.body;
-
-        let object_output = {};
-
-        let params_cmd = [];
-        let params_local = [];
-        let paramsComplete = params_cmd.concat(params_local).every((value, index, array) => { return value !== undefined });
-        
-
-        if (!paramsComplete) {
-            object_output = {
-                status: -1,
-                message: "params not complete"
-            }
-        }
-        else {
-
-            params_cmd.forEach((value, index, array) => { array[index] = '\'' + value + '\'' });
-
-            await axios.post(blockchain.nodeRPCURL, { jsonrpc: "2.0", method: apiName, params: [1], id: 1 }).then((httpResp) => {
-                if (httpResp.data.error) {
-                    object_output.status = -1;
-                    object_output.message = httpResp.data.message;
-                }
-                else {
-                    object_output.status = 0;
-                    object_output.data = {
-                        blockNumber: parseInt(httpResp.data.result.blockNumber),
-                        faildTransactionCount: parseInt(httpResp.data.result.faildTxSum),
-                        transactionCount: parseInt(httpResp.data.result.txSum)
-                    }
-                }
-
-            })
-        }
-        resp.send(object_output);
-    },
-    "getBlockNumber": async (req, resp, next) => {
-        let apiName = req.body.apiName;
-        let { keyStorePassword, keyPassword, info } = req.locals;
-        let { username, evidenceID, evidenceData } = req.body;
-
-        let object_output = {};
-
-        let params_cmd = [];
-        let params_local = [];
-        let paramsComplete = params_cmd.concat(params_local).every((value, index, array) => { return value !== undefined });
-        
-
-        if (!paramsComplete) {
-            object_output = {
-                status: -1,
-                message: "params not complete"
-            }
-        }
-        else {
-
-            params_cmd.forEach((value, index, array) => { array[index] = '\'' + value + '\'' });
-
-            await axios.post(blockchain.nodeRPCURL, { jsonrpc: "2.0", method: apiName, params: [1], id: 1 }).then((httpResp) => {
-                if (httpResp.data.error) {
-                    object_output.status = -1;
-                    object_output.message = httpResp.data.message;
-                }
-                else {
-                    object_output.status = 0;
-                    object_output.data = {
-                        blockNumber: parseInt(httpResp.data.result)
-                    }
-                }
-
-            })
-        }
-        resp.send(object_output);
-    },
-    "getPeers": async (req, resp, next) => {
-        let apiName = req.body.apiName;
-        let { keyStorePassword, keyPassword, info } = req.locals;
-        let { username, evidenceID, evidenceData } = req.body;
-
-        let object_output = {};
-
-        let params_cmd = [];
-        let params_local = [];
-        let paramsComplete = params_cmd.concat(params_local).every((value, index, array) => { return value !== undefined });
-        
-
-        if (!paramsComplete) {
-            object_output = {
-                status: -1,
-                message: "params not complete"
-            }
-        }
-        else {
-
-            params_cmd.forEach((value, index, array) => { array[index] = '\'' + value + '\'' });
-
-            await axios.post(blockchain.nodeRPCURL, { jsonrpc: "2.0", method: apiName, params: [1], id: 1 }).then((httpResp) => {
-                if (httpResp.data.error) {
-                    object_output.status = -1;
-                    object_output.message = httpResp.data.message;
-                }
-                else {
-                    object_output.status = 0;
-                    object_output.data = {
-                        peers: httpResp.data.result
-                    }
-                }
-            })
-        }
-        resp.send(object_output);
-    },
-};
-
-app.post("/exportedAPI/rpc", (req, resp, next) => {
-    passport.authenticate('jwt', { session: false }, (err, user, info) => {
-        console.log(req.url);
-        if (!user) {
-            let object_output = {
-                status: -1,
-                message: "Unauthorized!",
-            }
-            resp.send(object_output);
-        } else {
-            let { apiName } = req.body;
-            console.log(apiName);
-            if (apiName in rpcApiName2func) {
-                let func = rpcApiName2func[apiName];
-                func(req, resp, next);
-            }
-            else {
-                let object_output = {
-                    status: -1,
-                    "mesaage": "apiName: \"" + apiName + "\" not found"
-                };
-                resp.send(object_output);
-            }
-        }
-    })(req, resp, next);
-});
 
 //auth api
 app.post('/exportedAPI/login', (req, resp, next) => {
@@ -804,7 +717,8 @@ app.post('/exportedAPI/login', (req, resp, next) => {
             status: -1,
             message: "fields not complete!"
         }
-        resp.send(object_output);
+        
+        resp.status.send(object_output);
     } else {
         User.findOne({ username: username }).then((user) => {
             if (!user) {
@@ -812,7 +726,7 @@ app.post('/exportedAPI/login', (req, resp, next) => {
                     status: -1,
                     message: "user with username \"" + username + "\" not existed!"
                 }
-                resp.send(object_output);
+                resp.status(400).send(object_output);
             } else {
                 let verified = bcrypt.compareSync(password, user.password);
                 if (verified) {
@@ -838,6 +752,7 @@ app.post('/exportedAPI/login', (req, resp, next) => {
                         status: -1,
                         message: "incorrect password!"
                     }
+                    resp.status(400);
                     resp.send(object_output);
                 }
 
@@ -857,21 +772,21 @@ app.post('/exportedAPI/register', (req, resp, next) => {
             status: -1,
             message: "fields not complete!"
         }
-        resp.send(object_output);
+        resp.status(400).send(object_output);
     }
     else if (password !== password2) {
         let object_output = {
             status: -1,
             message: "passwords do not match!"
         }
-        resp.send(object_output);
+        resp.status(400).send(object_output);
     }
     else if (password.length < 6) {
         let object_output = {
             status: -1,
             message: "password too simple: less than 6 characters!"
         }
-        resp.send(object_output);
+        resp.status(400).send(object_output);
     }
     else {
         User.findOne({ username: username }).then((user) => {
@@ -880,7 +795,7 @@ app.post('/exportedAPI/register', (req, resp, next) => {
                     status: -1,
                     message: "user with username \"" + username + "\" already existed!"
                 }
-                resp.send(object_output);
+                resp.status(400).send(object_output);
             } else {
                 let newUser = new User({
                     username: username,

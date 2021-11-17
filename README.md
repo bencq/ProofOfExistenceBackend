@@ -22,6 +22,7 @@ edit `config.js` in your case before you proceed
 - ~~区块链浏览器找不到对应存证时返回错误反馈~~
 - ~~增加json格式存证~~
 - 二维码信息，存证证明
+- ~~接口权限控制~~
 
 产品logo 产品名称
 
