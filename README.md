@@ -4,6 +4,18 @@
 
 edit `config.js` in your case before you proceed
 
+Node.js v12.x:
+
+npm:
+express
+axios
+jsonwebtoken
+passport
+passport-jwt
+bcrypt
+multer
+mongoose
+
 ## todo:
 
 ~~overview 页面~~

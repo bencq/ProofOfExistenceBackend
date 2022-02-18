@@ -718,7 +718,7 @@ app.post('/exportedAPI/login', (req, resp, next) => {
             message: "fields not complete!"
         }
         
-        resp.status.send(object_output);
+        resp.send(object_output);
     } else {
         User.findOne({ username: username }).then((user) => {
             if (!user) {
